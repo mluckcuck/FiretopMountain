@@ -1,0 +1,12 @@
+datatype items = sword | shield | leatherArmour | lantern 
+datatype potions = skill | strength | fortune
+
+skillNum = {1..12}
+staminaNum = {0..24}
+luckNum = {1..12}
+
+provisionsNum = {0..10}
+provisionStrength = 4
+
+maxGold = 9
+goldNum = {0..maxGold}

@@ -1,0 +1,131 @@
+include "types.csp"
+include "dice.csp"
+
+channel getSkill : skillNum
+channel raiseSkill, lowerSkill, getInitialSkill : skillNum
+channel restoreSkill
+
+skillAlpha = {| getSkill, raiseSkill, lowerSkill, getInitialSkill, restoreSkill, rollD6 |}
+
+SKILL(initial, current) = 
+	getSkill!current -> SKILL(initial, current)
+	[]
+	restoreSkill -> SKILL(initial, initial)
+	[]
+	raiseSkill?n ->
+	(
+		if (current + n) <= initial then
+			SKILL(initial, current +n)
+		else 
+			SKILL(initial, initial)
+	)
+	[]
+	lowerSkill?n ->
+	(
+		if (current - n) >= 1 then
+			SKILL(initial, current - 1)
+		else
+			SKILL(initial, 1)
+	)
+	[]
+	getInitialSkill!initial -> SKILL(initial, current)
+
+
+channel getStamina : staminaNum
+channel lowerStamina, getInitialStamina : staminaNum
+channel raiseStamina
+channel restoreStamina
+
+staminaAlpha = {| getStamina, lowerStamina, getInitialStamina, raiseStamina, restoreStamina, rollD6 |}
+
+STAMINA(initial, current) =
+	getStamina!current -> STAMINA(initial, current)
+	[]
+	restoreStamina -> STAMINA(initial, initial)
+	[]
+	lowerStamina?n ->
+	(
+		if (current - n) >= 0 then
+			STAMINA(initial, current - n)
+		else
+			STAMINA(initial, 0)
+	)
+	[]
+	raiseStamina ->
+	(
+		if (current + provisionStrength) <= initial then
+			STAMINA(initial, current + provisionStrength)
+		else 
+			STAMINA(initial, initial)
+	)
+	[]
+	getInitialStamina!initial -> STAMINA(initial, current)
+
+channel getLuck : luckNum
+channel raiseLuck, lowerLuck, getInitialLuck : luckNum
+channel restoreLuck
+
+luckAlpha = {| getLuck, raiseLuck, lowerLuck, getInitialLuck, restoreLuck, rollD6 |}
+
+LUCK(initial, current) =
+	getLuck!current -> LUCK(initial, current)
+	[]
+	restoreLuck -> LUCK(initial, initial)
+	[]
+	lowerLuck?n ->
+	(
+		if (current - n) >= 1 then
+			LUCK(initial, current - 1)
+		else
+			LUCK(initial, 1)
+	)
+	[]
+	raiseLuck?n ->
+	(
+		if (current + n) <= initial then
+			LUCK(initial, current +n)
+		else 
+			LUCK(initial, initial)
+	)
+	[]
+	getInitialLuck!initial -> LUCK(initial, current)
+
+channel getGold : goldNum
+channel takeGold, loseGold : goldNum
+
+goldAlpha = {|getGold, takeGold, loseGold |}
+
+GOLD(gold) = 
+	getGold!gold -> GOLD(gold)
+	[]
+	takeGold?n -> 
+		if gold + n <=maxGold then
+			GOLD(gold+n)
+		else
+			GOLD(maxGold)
+	[]
+	loseGold?n ->
+		if gold - n >= 0 then
+			GOLD(gold - n)
+		else
+			GOLD(0)
+
+ADVENTURE_SHEET=
+	
+	(rollD6?skillRoll -> rollD6?staminaRoll1 -> rollD6?staminaRoll2 ->
+		
+	(
+		SKILL(skillRoll+6, skillRoll+6)	
+		|||
+		STAMINA(staminaRoll1+staminaRoll2+12, staminaRoll1+staminaRoll2+12)
+	)
+	|||
+	rollD6?luckRoll -> LUCK(luckRoll+6, luckRoll+6)
+	)
+	|||
+	GOLD(0)
+	
+
+assert ADVENTURE_SHEET :[deadlock free]
+assert ADVENTURE_SHEET :[divergence free]
+assert ADVENTURE_SHEET :[deterministic]
